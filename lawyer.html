@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Адвокат-мастер — кабинет</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --page:#0d0d10; --surface:#191922; --ink:#ffffff; --ink2:#c6c3d8; --muted:#8b87a0;
+    --grid:#2c2a38; --border:rgba(255,255,255,0.10); --accent:#7c5cff; --red:#e66767; --good:#0ca36f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;background:var(--page);color:var(--ink);}
+  .wrap{max-width:720px;margin:0 auto;padding:20px 16px 64px;}
+  h1{font-size:19px;}
+  .sub{color:var(--muted);font-size:13.5px;margin-bottom:18px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;}
+  label{display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;margin-top:14px;}
+  label:first-child{margin-top:0;}
+  input,select,textarea{width:100%;background:var(--page);border:1px solid var(--grid);border-radius:10px;color:var(--ink);font-size:15px;padding:11px 12px;font-family:inherit;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+  .btn-primary{display:block;width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;font-size:15px;font-weight:600;padding:13px;cursor:pointer;margin-top:18px;}
+  .btn-primary:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn-secondary{background:transparent;color:var(--ink2);border:1px solid var(--grid);border-radius:9px;font-size:13px;padding:8px 12px;cursor:pointer;font-family:inherit;}
+  .error-box{background:rgba(230,103,103,0.12);border:1px solid rgba(230,103,103,0.3);color:#f0a7a7;border-radius:10px;padding:10px 12px;font-size:13.5px;margin-top:12px;display:none;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  .topbar{display:flex;justify-content:space-between;align-items:center;margin-bottom:16px;}
+  .topbar .name{font-size:14px;color:var(--ink2);}
+
+  .tabs{display:flex;gap:6px;overflow-x:auto;margin-bottom:14px;}
+  .tab{flex:none;font-size:13px;padding:7px 13px;border-radius:999px;border:1px solid var(--grid);color:var(--ink2);cursor:pointer;background:transparent;white-space:nowrap;}
+  .tab.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+
+  .case-item{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:14px;margin-bottom:10px;cursor:pointer;}
+  .case-item:hover{border-color:var(--accent);}
+  .case-top{display:flex;justify-content:space-between;gap:10px;align-items:baseline;}
+  .case-name{font-size:15px;font-weight:600;}
+  .case-cat{font-size:13px;color:var(--ink2);margin-top:3px;}
+  .badge{font-size:11px;padding:3px 8px;border-radius:999px;border:1px solid var(--grid);color:var(--ink2);white-space:nowrap;}
+  .badge.new{color:#ffd166;border-color:#5c4a1f;}
+  .badge.in_review{color:#7fb8ff;border-color:#2a4a7a;}
+  .badge.submitted{color:var(--good);border-color:#1f5c44;}
+  .badge.closed{color:var(--muted);}
+  .empty{color:var(--muted);font-size:14px;padding:24px 0;text-align:center;}
+
+  .detail-field{margin-bottom:14px;}
+  .detail-field .k{font-size:12px;color:var(--muted);text-transform:uppercase;letter-spacing:.03em;margin-bottom:4px;}
+  .detail-field .v{font-size:14.5px;white-space:pre-wrap;line-height:1.5;}
+  .doc-card{border:1px solid var(--grid);border-radius:12px;padding:14px;margin-top:10px;}
+  .doc-title{font-weight:600;font-size:14.5px;margin-bottom:8px;}
+  .doc-content{white-space:pre-wrap;font-size:13.5px;color:var(--ink2);max-height:260px;overflow-y:auto;background:var(--page);border-radius:8px;padding:10px;}
+  .doc-needs{font-size:12.5px;color:#ffd166;margin-top:8px;}
+  .doc-actions{display:flex;gap:8px;margin-top:10px;}
+  .evidence-list{font-size:13.5px;color:var(--ink2);line-height:1.7;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="screen-login" class="screen">
+    <h1>Кабинет адвоката</h1>
+    <p class="sub">Адвокат-мастер</p>
+    <div class="card">
+      <label>Логин</label>
+      <input type="text" id="l-id" autocomplete="username">
+      <label>Пароль</label>
+      <input type="password" id="l-password" autocomplete="current-password">
+      <div class="error-box" id="login-error"></div>
+      <button class="btn-primary" id="login-submit">Войти</button>
+    </div>
+  </div>
+
+  <div id="screen-list" class="screen">
+    <div class="topbar">
+      <h1>Дела клиентов</h1>
+      <div>
+        <span class="name" id="lawyer-name"></span>
+        <button class="btn-secondary" id="logout-btn" style="margin-left:10px;">Выйти</button>
+      </div>
+    </div>
+    <div class="tabs" id="tabs"></div>
+    <button class="btn-secondary" id="refresh-btn" style="margin-bottom:14px;">Обновить</button>
+    <div id="case-list"></div>
+  </div>
+
+  <div id="screen-detail" class="screen">
+    <button class="btn-secondary" id="back-btn">← К списку дел</button>
+    <div class="card" style="margin-top:14px;">
+      <div class="topbar" style="margin-bottom:8px;">
+        <h1 id="d-client-name"></h1>
+        <select id="d-status"></select>
+      </div>
+      <div class="detail-field"><div class="k">Телефон</div><div class="v" id="d-phone"></div></div>
+      <div class="detail-field"><div class="k">ИИН/БИН</div><div class="v" id="d-iin"></div></div>
+      <div class="detail-field"><div class="k">Семейное положение</div><div class="v" id="d-family"></div></div>
+    </div>
+
+    <div id="d-result-wrap"></div>
+  </div>
+
+</div>
+
+<script>
+const SESSION_KEY = 'advokat_lawyer_session';
+const STATUS_LABELS = { new: 'Новое', in_review: 'В работе', submitted: 'Подано', closed: 'Закрыто' };
+const STATUS_ORDER = ['new', 'in_review', 'submitted', 'closed'];
+
+const state = { token: null, name: null, cases: [], filter: 'all', currentCaseId: null };
+
+function saveSession(){ localStorage.setItem(SESSION_KEY, JSON.stringify({ token: state.token, name: state.name })); }
+function restoreSession(){
+  const raw = localStorage.getItem(SESSION_KEY);
+  if (!raw) return false;
+  try {
+    const saved = JSON.parse(raw);
+    if (!saved.token) return false;
+    state.token = saved.token; state.name = saved.name;
+    return true;
+  } catch { return false; }
+}
+function clearSession(){ localStorage.removeItem(SESSION_KEY); state.token = null; }
+
+const screens = {
+  login: document.getElementById('screen-login'),
+  list: document.getElementById('screen-list'),
+  detail: document.getElementById('screen-detail'),
+};
+function showScreen(name){
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+async function api(path, opts){
+  opts = opts || {};
+  const headers = Object.assign({ 'Content-Type': 'application/json' }, opts.headers || {});
+  if (state.token) headers['X-Lawyer-Session'] = state.token;
+  const res = await fetch(path, Object.assign({}, opts, { headers }));
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
+  return data;
+}
+
+// --- логин ---
+document.getElementById('login-submit').addEventListener('click', async () => {
+  const errorEl = document.getElementById('login-error');
+  errorEl.style.display = 'none';
+  const lawyerId = document.getElementById('l-id').value.trim();
+  const password = document.getElementById('l-password').value;
+  if (!lawyerId || !password) {
+    errorEl.textContent = 'Введите логин и пароль';
+    errorEl.style.display = 'block';
+    return;
+  }
+  try {
+    const data = await api('/api/lawyer/login', { method: 'POST', body: JSON.stringify({ lawyerId, password }) });
+    state.token = data.token; state.name = data.name;
+    saveSession();
+    enterDashboard();
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+  }
+});
+
+document.getElementById('logout-btn').addEventListener('click', () => {
+  clearSession();
+  showScreen('login');
+});
+
+// --- список дел ---
+function renderTabs(){
+  const tabs = document.getElementById('tabs');
+  tabs.innerHTML = '';
+  const options = [['all', 'Все статусы']].concat(STATUS_ORDER.map(s => [s, STATUS_LABELS[s]]));
+  options.forEach(([value, label]) => {
+    const btn = document.createElement('button');
+    btn.className = 'tab' + (state.filter === value ? ' active' : '');
+    btn.textContent = label;
+    btn.addEventListener('click', () => { state.filter = value; renderTabs(); renderCaseList(); });
+    tabs.appendChild(btn);
+  });
+}
+
+function renderCaseList(){
+  const list = document.getElementById('case-list');
+  const filtered = state.filter === 'all' ? state.cases : state.cases.filter(c => c.status === state.filter);
+  if (!filtered.length) {
+    list.innerHTML = '<div class="empty">Пока нет ни одного дела.</div>';
+    return;
+  }
+  list.innerHTML = '';
+  filtered.forEach((c) => {
+    const item = document.createElement('div');
+    item.className = 'case-item';
+    item.innerHTML = `
+      <div class="case-top">
+        <div>
+          <div class="case-name">${escapeHtml(c.clientName || 'Без имени')}</div>
+          <div class="case-cat">${escapeHtml(c.category || 'Категория ещё не определена')}</div>
+        </div>
+        <span class="badge ${c.status}">${STATUS_LABELS[c.status] || c.status}</span>
+      </div>`;
+    item.addEventListener('click', () => openCase(c.caseId));
+    list.appendChild(item);
+  });
+}
+
+async function loadCases(){
+  try {
+    const data = await api('/api/lawyer/cases');
+    state.cases = data.cases;
+    renderCaseList();
+  } catch (err) {
+    if (String(err.message).includes('автор')) { clearSession(); showScreen('login'); return; }
+    document.getElementById('case-list').innerHTML = `<div class="error-box" style="display:block;">${escapeHtml(err.message)}</div>`;
+  }
+}
+
+document.getElementById('refresh-btn').addEventListener('click', loadCases);
+
+function enterDashboard(){
+  document.getElementById('lawyer-name').textContent = state.name || '';
+  renderTabs();
+  showScreen('list');
+  loadCases();
+}
+
+// --- карточка дела ---
+document.getElementById('back-btn').addEventListener('click', () => { showScreen('list'); loadCases(); });
+
+function escapeHtml(str){
+  return String(str || '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+function downloadAsDoc(filename, content){
+  const html = `<html><head><meta charset="utf-8"></head><body><pre style="font-family:inherit;white-space:pre-wrap;">${escapeHtml(content)}</pre></body></html>`;
+  const blob = new Blob(['﻿', html], { type: 'application/msword' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = filename.replace(/[\\/:*?"<>|]/g, '_') + '.doc';
+  document.body.appendChild(a); a.click(); a.remove();
+  URL.revokeObjectURL(url);
+}
+
+function renderResult(caseData){
+  const wrap = document.getElementById('d-result-wrap');
+  const r = caseData.result;
+  if (!r) {
+    wrap.innerHTML = '<div class="card"><div class="empty">Клиент ещё не закончил интервью с ИИ.</div></div>';
+    return;
+  }
+
+  let html = '';
+  if (r.isCriminalCase) {
+    html += `<div class="card" style="border-color:var(--red);background:rgba(230,103,103,0.08);">
+      <div class="k" style="color:#f0a7a7;">Уголовное дело</div>
+      <div class="v">${escapeHtml(r.criminalStatus || '—')}${r.processStage ? ' · ' + escapeHtml(r.processStage) : ''}${r.crimeGravityCategory ? ' · ' + escapeHtml(r.crimeGravityCategory) : ''}</div>
+      ${Array.isArray(r.mitigatingFactors) && r.mitigatingFactors.length ? `<div class="detail-field"><div class="k">Возможные смягчающие</div><div class="v">${r.mitigatingFactors.map(escapeHtml).join('<br>')}</div></div>` : ''}
+      ${Array.isArray(r.aggravatingFactors) && r.aggravatingFactors.length ? `<div class="detail-field"><div class="k">Возможные отягчающие</div><div class="v">${r.aggravatingFactors.map(escapeHtml).join('<br>')}</div></div>` : ''}
+    </div>`;
+  }
+
+  const fields = [
+    ['Категория', r.category], ['Правовая база', r.legalBasis], ['Стороны', r.partiesSummary],
+    ['Оценка перспектив', r.assessment], ['Сроки', r.deadlines], ['Подсудность', r.jurisdiction],
+    ['Госпошлина', r.gosposhlinaText],
+  ];
+  html += '<div class="card">' + fields.map(([k, v]) => v ? `<div class="detail-field"><div class="k">${escapeHtml(k)}</div><div class="v">${escapeHtml(v)}</div></div>` : '').join('') + '</div>';
+
+  if (Array.isArray(r.missingEvidence) && r.missingEvidence.length) {
+    html += '<div class="card"><div class="k" style="margin-bottom:8px;">Чего не хватает</div><div class="evidence-list">' +
+      r.missingEvidence.map(e => `• ${escapeHtml(e.item)} — ${escapeHtml(e.whereToGet)}`).join('<br>') + '</div></div>';
+  }
+
+  wrap.innerHTML = html;
+
+  if (Array.isArray(r.documents)) {
+    r.documents.forEach((doc, i) => {
+      const card = document.createElement('div');
+      card.className = 'doc-card';
+      card.innerHTML = `
+        <div class="doc-title">${escapeHtml(doc.title || doc.type)}</div>
+        <div class="doc-content" id="doc-content-${i}"></div>
+        ${Array.isArray(doc.needsClientData) && doc.needsClientData.length ? `<div class="doc-needs">Перед подачей дозаполнить: ${escapeHtml(doc.needsClientData.join(', '))}</div>` : ''}
+        <div class="doc-actions">
+          <button class="btn-secondary" data-copy="${i}">Скопировать</button>
+          <button class="btn-secondary" data-download="${i}">Скачать .doc</button>
+        </div>`;
+      wrap.appendChild(card);
+      card.querySelector(`#doc-content-${i}`).textContent = doc.content;
+      card.querySelector('[data-copy]').addEventListener('click', () => navigator.clipboard.writeText(doc.content));
+      card.querySelector('[data-download]').addEventListener('click', () => downloadAsDoc(doc.title || doc.type, doc.content));
+    });
+  }
+}
+
+async function openCase(caseId){
+  state.currentCaseId = caseId;
+  try {
+    const data = await api('/api/lawyer/case?caseId=' + encodeURIComponent(caseId));
+    const c = data.case;
+    document.getElementById('d-client-name').textContent = c.clientName || 'Без имени';
+    document.getElementById('d-phone').textContent = c.clientPhone || '—';
+    document.getElementById('d-iin').textContent = (c.intake && c.intake.iinBin) || '—';
+    document.getElementById('d-family').textContent = (c.intake && c.intake.familyStatus) || '—';
+
+    const statusSelect = document.getElementById('d-status');
+    statusSelect.innerHTML = STATUS_ORDER.map(s => `<option value="${s}" ${s === c.status ? 'selected' : ''}>${STATUS_LABELS[s]}</option>`).join('');
+    statusSelect.onchange = async () => {
+      try {
+        await api('/api/lawyer/case', { method: 'POST', body: JSON.stringify({ caseId, status: statusSelect.value }) });
+      } catch (err) {
+        alert('Не удалось изменить статус: ' + err.message);
+      }
+    };
+
+    renderResult(c);
+    showScreen('detail');
+  } catch (err) {
+    alert('Не удалось открыть дело: ' + err.message);
+  }
+}
+
+// --- старт ---
+if (restoreSession()) {
+  enterDashboard();
+} else {
+  showScreen('login');
+}
+</script>
+</body>
+</html>

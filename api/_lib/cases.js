@@ -1,0 +1,171 @@
+const { kv } = require('@vercel/kv');
+const { randomUUID, scryptSync, randomBytes, timingSafeEqual } = require('crypto');
+
+// Статусы дела — те же, что в кабинете bankrot-master (Все статусы/Новые/В
+// работе/Подано/Закрыто), чтобы адвокат не переучивался.
+const CASE_STATUSES = ['new', 'in_review', 'submitted', 'closed'];
+
+const SESSION_TTL_SECONDS = 60 * 60 * 24 * 30; // 30 дней
+const LAWYER_CASES_MAX = 2000; // защита от неограниченного роста одного списка в KV
+
+function lawyerKey(lawyerId) {
+  return `lawyer:${lawyerId}`;
+}
+function lawyerCasesKey(lawyerId) {
+  return `lawyer:${lawyerId}:cases`;
+}
+function caseKey(caseId) {
+  return `case:${caseId}`;
+}
+function sessionKey(token) {
+  return `session:${token}`;
+}
+
+// @vercel/kv в разных версиях может вернуть как готовый объект, так и сырую
+// JSON-строку — тот же обходной путь, что в api/_lib/payments.js zhaloba-master.
+function parseMaybeJson(raw) {
+  if (raw === null || raw === undefined) return null;
+  if (typeof raw === 'string') {
+    try {
+      return JSON.parse(raw);
+    } catch {
+      return null;
+    }
+  }
+  return raw;
+}
+
+// Пароль адвоката не хранится в открытом виде (в отличие от ADMIN_PASSWORD в
+// zhaloba-master) — здесь под паролем реальные ПД клиентов, а не внутренний
+// лог. scrypt + случайная соль, без внешних зависимостей.
+function hashPassword(password) {
+  const salt = randomBytes(16);
+  const hash = scryptSync(password, salt, 64);
+  return `${salt.toString('hex')}:${hash.toString('hex')}`;
+}
+
+function verifyPassword(password, stored) {
+  if (typeof stored !== 'string' || !stored.includes(':')) return false;
+  const [saltHex, hashHex] = stored.split(':');
+  const salt = Buffer.from(saltHex, 'hex');
+  const expected = Buffer.from(hashHex, 'hex');
+  const actual = scryptSync(password, salt, 64);
+  if (actual.length !== expected.length) return false;
+  return timingSafeEqual(actual, expected);
+}
+
+async function createLawyer({ lawyerId, name, password }) {
+  const record = {
+    lawyerId,
+    name,
+    passwordHash: hashPassword(password),
+    active: true,
+    createdAt: new Date().toISOString(),
+  };
+  await kv.set(lawyerKey(lawyerId), JSON.stringify(record));
+  return record;
+}
+
+async function getLawyer(lawyerId) {
+  const raw = await kv.get(lawyerKey(lawyerId));
+  return parseMaybeJson(raw);
+}
+
+async function setLawyerActive(lawyerId, active) {
+  const lawyer = await getLawyer(lawyerId);
+  if (!lawyer) return null;
+  lawyer.active = !!active;
+  await kv.set(lawyerKey(lawyerId), JSON.stringify(lawyer));
+  return lawyer;
+}
+
+// Единая точка входа для логина: проверяет и пароль, и то, что доступ не
+// отключён вручную (см. setLawyerActive — так закрывается доступ, если
+// оплата по договору не пришла, без отдельной биллинг-системы).
+async function verifyLawyerCredentials(lawyerId, password) {
+  const lawyer = await getLawyer(lawyerId);
+  if (!lawyer || !lawyer.active) return null;
+  if (!verifyPassword(password, lawyer.passwordHash)) return null;
+  return lawyer;
+}
+
+async function createSession(lawyerId) {
+  const token = randomUUID();
+  await kv.set(sessionKey(token), lawyerId, { ex: SESSION_TTL_SECONDS });
+  return token;
+}
+
+async function getSessionLawyerId(token) {
+  if (typeof token !== 'string' || !token.trim()) return null;
+  const lawyerId = await kv.get(sessionKey(token));
+  return typeof lawyerId === 'string' ? lawyerId : null;
+}
+
+// В отличие от result:{id} в zhaloba-master (TTL 5 дней — расходный
+// черновик), дело адвоката — его рабочий файл, поэтому без TTL: не должно
+// исчезнуть само по себе, пока лицо (адвокат/клиент) не закрыло его вручную.
+async function createCase({ lawyerId, clientName, clientPhone, intake, messages }) {
+  const caseId = randomUUID();
+  const record = {
+    caseId,
+    lawyerId,
+    clientName: clientName || '',
+    clientPhone: clientPhone || '',
+    // Структурные поля с формы (ИИН/БИН, семейное положение и т.п.) — по
+    // образцу bankrot-master, отдельно от messages (свободного разговора с ИИ).
+    intake: intake || {},
+    status: 'new',
+    messages: Array.isArray(messages) ? messages : [],
+    result: null,
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+  await kv.set(caseKey(caseId), JSON.stringify(record));
+  const key = lawyerCasesKey(lawyerId);
+  await kv.lpush(key, caseId);
+  await kv.ltrim(key, 0, LAWYER_CASES_MAX - 1);
+  return record;
+}
+
+async function getCase(caseId) {
+  const raw = await kv.get(caseKey(caseId));
+  return parseMaybeJson(raw);
+}
+
+async function saveCase(caseId, data) {
+  const record = { ...data, updatedAt: new Date().toISOString() };
+  await kv.set(caseKey(caseId), JSON.stringify(record));
+  return record;
+}
+
+async function getLawyerCases(lawyerId) {
+  const ids = await kv.lrange(lawyerCasesKey(lawyerId), 0, -1);
+  const items = await Promise.all(ids.map(async (caseId) => {
+    const stored = await getCase(caseId);
+    if (!stored) return null; // запись потерялась/битая — не показываем призрак в списке
+    return {
+      caseId,
+      clientName: stored.clientName,
+      clientPhone: stored.clientPhone,
+      status: stored.status,
+      category: (stored.result && stored.result.category) || null,
+      createdAt: stored.createdAt,
+      updatedAt: stored.updatedAt,
+    };
+  }));
+  return items.filter(Boolean);
+}
+
+module.exports = {
+  CASE_STATUSES,
+  createLawyer,
+  getLawyer,
+  setLawyerActive,
+  verifyLawyerCredentials,
+  createSession,
+  getSessionLawyerId,
+  createCase,
+  getCase,
+  saveCase,
+  getLawyerCases,
+};

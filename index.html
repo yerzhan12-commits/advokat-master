@@ -1,0 +1,408 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Адвокат-мастер — приём клиента</title>
+<link rel="icon" href="data:,">
+<style>
+  :root{
+    --page:#0d0d10;
+    --surface:#191922;
+    --ink:#ffffff;
+    --ink2:#c6c3d8;
+    --muted:#8b87a0;
+    --grid:#2c2a38;
+    --border:rgba(255,255,255,0.10);
+    --accent:#7c5cff;
+    --red:#e66767;
+    --good:#0ca36f;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    background:var(--page);
+    color:var(--ink);
+  }
+  .wrap{max-width:560px;margin:0 auto;padding:24px 16px 64px;}
+  h1{font-size:19px;margin-bottom:4px;}
+  .sub{color:var(--muted);font-size:13.5px;margin-bottom:20px;}
+  .card{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:14px;}
+  label{display:block;font-size:13px;color:var(--ink2);margin-bottom:6px;margin-top:14px;}
+  label:first-child{margin-top:0;}
+  input[type=text],input[type=tel],select,textarea{
+    width:100%;background:var(--page);border:1px solid var(--grid);border-radius:10px;
+    color:var(--ink);font-size:15px;padding:11px 12px;font-family:inherit;
+  }
+  textarea{min-height:110px;resize:vertical;}
+  input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);}
+  .btn-primary{
+    display:block;width:100%;background:var(--accent);color:#fff;border:none;border-radius:10px;
+    font-size:15px;font-weight:600;padding:13px;cursor:pointer;margin-top:18px;
+  }
+  .btn-primary:disabled{opacity:0.5;cursor:not-allowed;}
+  .btn-secondary{
+    background:transparent;color:var(--ink2);border:1px solid var(--grid);border-radius:10px;
+    font-size:14px;padding:10px 14px;cursor:pointer;font-family:inherit;
+  }
+  .error-box{background:rgba(230,103,103,0.12);border:1px solid rgba(230,103,103,0.3);color:#f0a7a7;
+    border-radius:10px;padding:10px 12px;font-size:13.5px;margin-top:12px;display:none;}
+  .screen{display:none;}
+  .screen.active{display:block;}
+
+  .row-inline{display:flex;gap:8px;align-items:flex-start;}
+  .row-inline textarea{flex:1;}
+  .mic-btn{
+    flex:none;width:40px;height:40px;border-radius:10px;border:1px solid var(--grid);
+    background:var(--page);color:var(--ink2);cursor:pointer;font-size:16px;display:none;
+    align-items:center;justify-content:center;
+  }
+  .mic-btn.recording{background:var(--red);color:#fff;border-color:var(--red);}
+  .file-attach-label{
+    display:inline-flex;align-items:center;gap:6px;font-size:13px;color:var(--ink2);
+    border:1px dashed var(--grid);border-radius:10px;padding:8px 12px;cursor:pointer;margin-top:10px;
+  }
+  .file-attach-label input{display:none;}
+  .file-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}
+  .file-chip{
+    display:flex;align-items:center;gap:6px;background:var(--page);border:1px solid var(--grid);
+    border-radius:8px;padding:5px 8px;font-size:12.5px;color:var(--ink2);
+  }
+  .file-chip button{background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;}
+
+  /* --- chat --- */
+  .progress-row{display:flex;gap:5px;margin-bottom:16px;}
+  .progress-dot{flex:1;height:4px;border-radius:2px;background:var(--grid);}
+  .progress-dot.done{background:var(--accent);}
+  .chat-history{display:flex;flex-direction:column;gap:10px;margin-bottom:14px;}
+  .bubble{max-width:88%;padding:10px 13px;border-radius:12px;font-size:14.5px;line-height:1.5;white-space:pre-wrap;}
+  .bubble.q{align-self:flex-start;background:var(--surface);border:1px solid var(--border);}
+  .bubble.a{align-self:flex-end;background:var(--accent);color:#fff;}
+  .spinner{display:none;color:var(--muted);font-size:13px;padding:8px 0;}
+
+  .done-icon{font-size:38px;margin-bottom:10px;}
+  .lawyer-note{color:var(--muted);font-size:13px;margin-top:16px;line-height:1.5;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div id="screen-error" class="screen">
+    <h1>Ссылка недействительна</h1>
+    <p class="sub">Уточните актуальную ссылку у вашего адвоката.</p>
+  </div>
+
+  <div id="screen-intro" class="screen">
+    <h1>Приём клиента</h1>
+    <p class="sub">Заполните форму — адвокат получит структурированную карточку дела и черновики документов. Ваши данные видит только адвокат.</p>
+
+    <div class="card">
+      <label>ФИО</label>
+      <input type="text" id="f-name" autocomplete="name">
+
+      <label>Телефон</label>
+      <input type="tel" id="f-phone" placeholder="+7 7__ ___ __ __" autocomplete="tel">
+
+      <label>ИИН/БИН (12 цифр)</label>
+      <input type="text" id="f-iin" inputmode="numeric" maxlength="12">
+
+      <label>Семейное положение</label>
+      <select id="f-family">
+        <option value="">Не указано</option>
+        <option value="не в браке">Не в браке</option>
+        <option value="в браке">В браке</option>
+        <option value="разведён(а)">Разведён(а)</option>
+        <option value="вдовец/вдова">Вдовец/вдова</option>
+      </select>
+
+      <label>Опишите ситуацию своими словами</label>
+      <div class="row-inline">
+        <textarea id="f-situation" placeholder="Что произошло, с кем спор, какие суммы/сроки известны..."></textarea>
+        <button type="button" class="mic-btn" id="intake-mic" title="Голосовой ввод">🎙</button>
+      </div>
+
+      <label class="file-attach-label" for="intake-files">📎 Приложить фото/PDF (расписка, договор и т.п.)
+        <input type="file" id="intake-files" accept="image/*,.pdf" multiple>
+      </label>
+      <div class="file-list" id="file-list"></div>
+
+      <div class="error-box" id="intro-error"></div>
+      <button class="btn-primary" id="intro-submit">Отправить и продолжить с ИИ →</button>
+    </div>
+    <p class="lawyer-note">Это не окончательные документы — их проверит и подпишет ваш адвокат перед подачей.</p>
+  </div>
+
+  <div id="screen-chat" class="screen">
+    <h1>Уточняющие вопросы</h1>
+    <div class="progress-row" id="progress-row"></div>
+    <div class="chat-history" id="chat-history"></div>
+    <div class="spinner" id="chat-spinner">Обрабатываем ответ…</div>
+    <div class="card" id="chat-input-card" style="display:none;">
+      <div class="row-inline">
+        <textarea id="chat-answer" placeholder="Ваш ответ..."></textarea>
+        <button type="button" class="mic-btn" id="chat-mic" title="Голосовой ввод">🎙</button>
+      </div>
+      <button class="btn-primary" id="chat-send">Ответить</button>
+    </div>
+    <div class="error-box" id="chat-error"></div>
+  </div>
+
+  <div id="screen-done" class="screen">
+    <div class="card" style="text-align:center;">
+      <div class="done-icon">✅</div>
+      <h1>Спасибо!</h1>
+      <p class="sub">Ваш адвокат получил карточку дела и свяжется с вами по указанному телефону.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const MAX_FILES = 5;
+const MAX_TOTAL_BASE64_CHARS = 4 * 1024 * 1024;
+const MAX_IMAGE_DIMENSION = 1600;
+
+const state = { lawyerId: null, caseId: null, messages: [], attachedFiles: [], questionCount: 0 };
+
+function getLawyerIdFromUrl(){
+  const params = new URLSearchParams(window.location.search);
+  return (params.get('l') || '').trim();
+}
+
+const screens = {
+  error: document.getElementById('screen-error'),
+  intro: document.getElementById('screen-intro'),
+  chat: document.getElementById('screen-chat'),
+  done: document.getElementById('screen-done'),
+};
+function showScreen(name){
+  Object.values(screens).forEach(s => s.classList.remove('active'));
+  screens[name].classList.add('active');
+}
+
+state.lawyerId = getLawyerIdFromUrl();
+if (!state.lawyerId) {
+  showScreen('error');
+} else {
+  showScreen('intro');
+}
+
+// --- вложения (фото/PDF) — прикрепляются один раз, на шаге формы ---
+function compressImage(file){
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    const reader = new FileReader();
+    reader.onload = () => { img.src = reader.result; };
+    reader.onerror = reject;
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > MAX_IMAGE_DIMENSION || height > MAX_IMAGE_DIMENSION) {
+        const scale = MAX_IMAGE_DIMENSION / Math.max(width, height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width; canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', 0.75).split(',')[1]);
+    };
+    img.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function readFileAsBase64(file){
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result.split(',')[1]);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+function renderFileList(){
+  const list = document.getElementById('file-list');
+  list.innerHTML = '';
+  state.attachedFiles.forEach((f, i) => {
+    const chip = document.createElement('div');
+    chip.className = 'file-chip';
+    const name = document.createElement('span');
+    name.textContent = f.name;
+    const removeBtn = document.createElement('button');
+    removeBtn.type = 'button';
+    removeBtn.textContent = '✕';
+    removeBtn.addEventListener('click', () => { state.attachedFiles.splice(i, 1); renderFileList(); });
+    chip.appendChild(name); chip.appendChild(removeBtn);
+    list.appendChild(chip);
+  });
+}
+document.getElementById('intake-files').addEventListener('change', async (e) => {
+  const errorEl = document.getElementById('intro-error');
+  errorEl.style.display = 'none';
+  const files = Array.from(e.target.files || []);
+  e.target.value = '';
+  if (state.attachedFiles.length + files.length > MAX_FILES) {
+    errorEl.textContent = `Не больше ${MAX_FILES} файлов.`;
+    errorEl.style.display = 'block';
+    return;
+  }
+  let addedCount = 0;
+  for (const file of files) {
+    const isImage = file.type.startsWith('image/');
+    const isPdf = file.type === 'application/pdf';
+    if (!isImage && !isPdf) {
+      errorEl.textContent = 'Разрешены только изображения и PDF.';
+      errorEl.style.display = 'block';
+      continue;
+    }
+    try {
+      const base64 = isImage ? await compressImage(file) : await readFileAsBase64(file);
+      state.attachedFiles.push({ name: file.name, mediaType: isImage ? 'image/jpeg' : 'application/pdf', kind: isImage ? 'image' : 'document', base64 });
+      addedCount += 1;
+    } catch (err) { console.error('file read error', err); }
+  }
+  const totalChars = state.attachedFiles.reduce((sum, f) => sum + f.base64.length, 0);
+  if (totalChars > MAX_TOTAL_BASE64_CHARS) {
+    state.attachedFiles = addedCount ? state.attachedFiles.slice(0, -addedCount) : state.attachedFiles;
+    errorEl.textContent = 'Суммарный размер файлов слишком большой.';
+    errorEl.style.display = 'block';
+  }
+  renderFileList();
+});
+
+// --- голосовой ввод (Web Speech API, только для русского — см. zhaloba-master) ---
+const SpeechRecognitionClass = window.SpeechRecognition || window.webkitSpeechRecognition;
+function setupMic(buttonId, inputEl){
+  const btn = document.getElementById(buttonId);
+  if (!SpeechRecognitionClass) return;
+  btn.style.display = 'flex';
+  let recognition = null, listening = false;
+  btn.addEventListener('click', () => {
+    if (listening) { recognition && recognition.stop(); return; }
+    recognition = new SpeechRecognitionClass();
+    recognition.lang = 'ru-RU';
+    recognition.interimResults = false;
+    recognition.maxAlternatives = 1;
+    recognition.onstart = () => { listening = true; btn.classList.add('recording'); };
+    recognition.onend = () => { listening = false; btn.classList.remove('recording'); };
+    recognition.onerror = () => { listening = false; btn.classList.remove('recording'); };
+    recognition.onresult = (e) => {
+      const transcript = e.results[0][0].transcript;
+      inputEl.value = inputEl.value ? (inputEl.value + ' ' + transcript) : transcript;
+    };
+    recognition.start();
+  });
+}
+setupMic('intake-mic', document.getElementById('f-situation'));
+setupMic('chat-mic', document.getElementById('chat-answer'));
+
+// --- шаг 1: форма → создание дела ---
+document.getElementById('intro-submit').addEventListener('click', async () => {
+  const errorEl = document.getElementById('intro-error');
+  errorEl.style.display = 'none';
+
+  const clientName = document.getElementById('f-name').value.trim();
+  const clientPhone = document.getElementById('f-phone').value.trim();
+  const iinBin = document.getElementById('f-iin').value.trim();
+  const familyStatus = document.getElementById('f-family').value;
+  const situationText = document.getElementById('f-situation').value.trim();
+
+  if (!clientName || !clientPhone || !/^\d{12}$/.test(iinBin) || situationText.length < 20) {
+    errorEl.textContent = 'Проверьте поля: ФИО, телефон, ИИН/БИН (12 цифр) и описание ситуации (не короче 20 символов) обязательны.';
+    errorEl.style.display = 'block';
+    return;
+  }
+
+  const btn = document.getElementById('intro-submit');
+  btn.disabled = true;
+  btn.textContent = 'Отправляем…';
+
+  try {
+    const res = await fetch('/api/case-create', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ lawyerId: state.lawyerId, clientName, clientPhone, iinBin, familyStatus, situationText, attachedFiles: state.attachedFiles }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Не удалось отправить форму');
+
+    state.caseId = data.caseId;
+    state.messages = data.messages;
+    showScreen('chat');
+    callCaseWizard();
+  } catch (err) {
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+    btn.disabled = false;
+    btn.textContent = 'Отправить и продолжить с ИИ →';
+  }
+});
+
+// --- шаг 2: чат уточняющих вопросов ---
+const chatHistory = document.getElementById('chat-history');
+const chatInputCard = document.getElementById('chat-input-card');
+const chatSpinner = document.getElementById('chat-spinner');
+const chatAnswer = document.getElementById('chat-answer');
+const MAX_EXPECTED_QUESTIONS = 5; // ориентир для прогресс-бара, не жёсткий лимит
+
+function addBubble(role, text){
+  const b = document.createElement('div');
+  b.className = 'bubble ' + (role === 'assistant' ? 'q' : 'a');
+  b.textContent = text;
+  chatHistory.appendChild(b);
+}
+function updateProgress(){
+  const row = document.getElementById('progress-row');
+  row.innerHTML = '';
+  for (let i = 0; i < MAX_EXPECTED_QUESTIONS; i++) {
+    const dot = document.createElement('div');
+    dot.className = 'progress-dot' + (i < state.questionCount ? ' done' : '');
+    row.appendChild(dot);
+  }
+}
+async function callCaseWizard(){
+  chatInputCard.style.display = 'none';
+  chatSpinner.style.display = 'block';
+  document.getElementById('chat-error').style.display = 'none';
+
+  try {
+    const res = await fetch('/api/case-wizard', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ caseId: state.caseId, messages: state.messages, lang: 'ru' }),
+    });
+    const data = await res.json();
+    chatSpinner.style.display = 'none';
+    if (!res.ok) throw new Error(data.error || 'Ошибка сервера');
+
+    if (data.status === 'need_more_info') {
+      state.messages.push({ role: 'assistant', content: data.question });
+      addBubble('assistant', data.question);
+      state.questionCount += 1;
+      updateProgress();
+      chatInputCard.style.display = 'block';
+      chatAnswer.value = '';
+      chatAnswer.focus();
+    } else if (data.status === 'done') {
+      updateProgress();
+      showScreen('done');
+    } else {
+      throw new Error('Не удалось разобрать ответ сервера');
+    }
+  } catch (err) {
+    chatSpinner.style.display = 'none';
+    const errorEl = document.getElementById('chat-error');
+    errorEl.textContent = err.message;
+    errorEl.style.display = 'block';
+    chatInputCard.style.display = 'block';
+  }
+}
+
+document.getElementById('chat-send').addEventListener('click', () => {
+  const text = chatAnswer.value.trim();
+  if (!text) return;
+  state.messages.push({ role: 'user', content: text });
+  addBubble('user', text);
+  callCaseWizard();
+});
+</script>
+</body>
+</html>
