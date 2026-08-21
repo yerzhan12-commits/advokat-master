@@ -147,6 +147,16 @@ async function saveCase(caseId, data) {
   return record;
 }
 
+// Полное удаление дела — на случай, если клиент отказался от услуг и попросил
+// удалить его данные (актуально с учётом ст.12 Закона РК "О персональных
+// данных" — данные не должны храниться дольше, чем нужно). Удаляет и сам
+// объект дела, и ссылку на него из списка дел адвоката.
+async function deleteCase(caseId, lawyerId) {
+  const client = await getClient();
+  await client.del(caseKey(caseId));
+  await client.lRem(lawyerCasesKey(lawyerId), 0, caseId);
+}
+
 async function getLawyerCases(lawyerId) {
   const client = await getClient();
   const ids = await client.lRange(lawyerCasesKey(lawyerId), 0, -1);
@@ -177,5 +187,6 @@ module.exports = {
   createCase,
   getCase,
   saveCase,
+  deleteCase,
   getLawyerCases,
 };

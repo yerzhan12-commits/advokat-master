@@ -1,4 +1,4 @@
-const { getSessionLawyerId, getCase, saveCase, CASE_STATUSES } = require('../_lib/cases');
+const { getSessionLawyerId, getCase, saveCase, deleteCase, CASE_STATUSES } = require('../_lib/cases');
 
 module.exports = async (req, res) => {
   const token = req.headers['x-lawyer-session'];
@@ -36,6 +36,15 @@ module.exports = async (req, res) => {
       }
       const updated = await saveCase(caseId, { ...stored, status });
       res.status(200).json({ case: updated });
+      return;
+    }
+
+    if (req.method === 'DELETE') {
+      // Клиент отказался от услуг / попросил удалить данные — полное
+      // удаление без возможности восстановить, поэтому это отдельная,
+      // явная кнопка в кабинете, а не побочный эффект смены статуса.
+      await deleteCase(caseId, lawyerId);
+      res.status(200).json({ deleted: true });
       return;
     }
 

@@ -99,6 +99,8 @@
     </div>
 
     <div id="d-result-wrap"></div>
+
+    <button class="btn-secondary" id="delete-case-btn" style="margin-top:18px;border-color:var(--red);color:var(--red);">Удалить дело безвозвратно</button>
   </div>
 
 </div>
@@ -314,6 +316,18 @@ async function openCase(caseId){
         await api('/api/lawyer/case', { method: 'POST', body: JSON.stringify({ caseId, status: statusSelect.value }) });
       } catch (err) {
         alert('Не удалось изменить статус: ' + err.message);
+      }
+    };
+
+    document.getElementById('delete-case-btn').onclick = async () => {
+      const confirmed = confirm(`Удалить дело клиента «${c.clientName || 'без имени'}» без возможности восстановить?`);
+      if (!confirmed) return;
+      try {
+        await api('/api/lawyer/case?caseId=' + encodeURIComponent(caseId), { method: 'DELETE' });
+        showScreen('list');
+        loadCases();
+      } catch (err) {
+        alert('Не удалось удалить дело: ' + err.message);
       }
     };
 
