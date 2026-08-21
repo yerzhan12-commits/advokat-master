@@ -1,5 +1,5 @@
 const Anthropic = require('@anthropic-ai/sdk');
-const { kv } = require('@vercel/kv');
+const { getClient } = require('./_lib/redis-client');
 const { getCase, saveCase } = require('./_lib/cases');
 const { computeGosposhlina } = require('./_lib/legal-calc');
 
@@ -237,7 +237,8 @@ module.exports = async (req, res) => {
       parsed.result.gosposhlinaText = gp.text;
 
       try {
-        await kv.lpush('case_wizard_log', JSON.stringify({
+        const client = await getClient();
+        await client.lPush('case_wizard_log', JSON.stringify({
           ts: new Date().toISOString(),
           caseId,
           lang: lang === 'kk' ? 'kk' : 'ru',

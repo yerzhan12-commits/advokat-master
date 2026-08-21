@@ -1,4 +1,4 @@
-const { kv } = require('@vercel/kv');
+const { getClient } = require('./redis-client');
 const { randomUUID, scryptSync, randomBytes, timingSafeEqual } = require('crypto');
 
 // Статусы дела — те же, что в кабинете bankrot-master (Все статусы/Новые/В
@@ -21,8 +21,9 @@ function sessionKey(token) {
   return `session:${token}`;
 }
 
-// @vercel/kv в разных версиях может вернуть как готовый объект, так и сырую
-// JSON-строку — тот же обходной путь, что в api/_lib/payments.js zhaloba-master.
+// node-redis всегда возвращает сырую строку (мы сами делаем JSON.stringify
+// перед записью) — этот разбор на всякий случай терпим и к сырому объекту,
+// если формат хранения когда-нибудь изменится.
 function parseMaybeJson(raw) {
   if (raw === null || raw === undefined) return null;
   if (typeof raw === 'string') {
@@ -62,12 +63,14 @@ async function createLawyer({ lawyerId, name, password }) {
     active: true,
     createdAt: new Date().toISOString(),
   };
-  await kv.set(lawyerKey(lawyerId), JSON.stringify(record));
+  const client = await getClient();
+  await client.set(lawyerKey(lawyerId), JSON.stringify(record));
   return record;
 }
 
 async function getLawyer(lawyerId) {
-  const raw = await kv.get(lawyerKey(lawyerId));
+  const client = await getClient();
+  const raw = await client.get(lawyerKey(lawyerId));
   return parseMaybeJson(raw);
 }
 
@@ -75,7 +78,8 @@ async function setLawyerActive(lawyerId, active) {
   const lawyer = await getLawyer(lawyerId);
   if (!lawyer) return null;
   lawyer.active = !!active;
-  await kv.set(lawyerKey(lawyerId), JSON.stringify(lawyer));
+  const client = await getClient();
+  await client.set(lawyerKey(lawyerId), JSON.stringify(lawyer));
   return lawyer;
 }
 
@@ -91,13 +95,15 @@ async function verifyLawyerCredentials(lawyerId, password) {
 
 async function createSession(lawyerId) {
   const token = randomUUID();
-  await kv.set(sessionKey(token), lawyerId, { ex: SESSION_TTL_SECONDS });
+  const client = await getClient();
+  await client.set(sessionKey(token), lawyerId, { EX: SESSION_TTL_SECONDS });
   return token;
 }
 
 async function getSessionLawyerId(token) {
   if (typeof token !== 'string' || !token.trim()) return null;
-  const lawyerId = await kv.get(sessionKey(token));
+  const client = await getClient();
+  const lawyerId = await client.get(sessionKey(token));
   return typeof lawyerId === 'string' ? lawyerId : null;
 }
 
@@ -120,26 +126,30 @@ async function createCase({ lawyerId, clientName, clientPhone, intake, messages 
     createdAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
   };
-  await kv.set(caseKey(caseId), JSON.stringify(record));
+  const client = await getClient();
+  await client.set(caseKey(caseId), JSON.stringify(record));
   const key = lawyerCasesKey(lawyerId);
-  await kv.lpush(key, caseId);
-  await kv.ltrim(key, 0, LAWYER_CASES_MAX - 1);
+  await client.lPush(key, caseId);
+  await client.lTrim(key, 0, LAWYER_CASES_MAX - 1);
   return record;
 }
 
 async function getCase(caseId) {
-  const raw = await kv.get(caseKey(caseId));
+  const client = await getClient();
+  const raw = await client.get(caseKey(caseId));
   return parseMaybeJson(raw);
 }
 
 async function saveCase(caseId, data) {
   const record = { ...data, updatedAt: new Date().toISOString() };
-  await kv.set(caseKey(caseId), JSON.stringify(record));
+  const client = await getClient();
+  await client.set(caseKey(caseId), JSON.stringify(record));
   return record;
 }
 
 async function getLawyerCases(lawyerId) {
-  const ids = await kv.lrange(lawyerCasesKey(lawyerId), 0, -1);
+  const client = await getClient();
+  const ids = await client.lRange(lawyerCasesKey(lawyerId), 0, -1);
   const items = await Promise.all(ids.map(async (caseId) => {
     const stored = await getCase(caseId);
     if (!stored) return null; // запись потерялась/битая — не показываем призрак в списке
