@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Адвокат-мастер — презентация для адвокатов</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚖️</text></svg>">
+<style>
+  :root{
+    --ground:#f2ede1;
+    --surface:#fbf9f2;
+    --surface-line:#e7dfc9;
+    --ink:#1c1a22;
+    --ink-dim:#5c5666;
+    --ink-faint:#8b849a;
+    --rule:#d9cfb2;
+    --accent:#6b46e5;
+    --accent-ink:#ffffff;
+    --accent-tint:rgba(107,70,229,0.08);
+    --accent-tint-strong:rgba(107,70,229,0.14);
+    --good:#3f7a4f;
+    --serif:Georgia,"Iowan Old Style","Times New Roman",serif;
+    --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+    --mono:ui-monospace,"SFMono-Regular","Cascadia Code",Consolas,monospace;
+  }
+  @media (prefers-color-scheme: dark){
+    :root:not([data-theme="light"]){
+      --ground:#131019;
+      --surface:#1c1826;
+      --surface-line:#312a42;
+      --ink:#ece7db;
+      --ink-dim:#a89fc4;
+      --ink-faint:#726a8c;
+      --rule:#2e2740;
+      --accent:#a689ff;
+      --accent-ink:#131019;
+      --accent-tint:rgba(166,137,255,0.12);
+      --accent-tint-strong:rgba(166,137,255,0.2);
+      --good:#7fc794;
+    }
+  }
+  :root[data-theme="dark"]{
+    --ground:#131019;
+    --surface:#1c1826;
+    --surface-line:#312a42;
+    --ink:#ece7db;
+    --ink-dim:#a89fc4;
+    --ink-faint:#726a8c;
+    --rule:#2e2740;
+    --accent:#a689ff;
+    --accent-ink:#131019;
+    --accent-tint:rgba(166,137,255,0.12);
+    --accent-tint-strong:rgba(166,137,255,0.2);
+    --good:#7fc794;
+  }
+
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  @media (prefers-reduced-motion:reduce){ html{scroll-behavior:auto;} }
+  body{
+    margin:0;
+    background:var(--ground);
+    color:var(--ink);
+    font-family:var(--sans);
+    line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  ::selection{background:var(--accent-tint-strong);color:var(--ink);}
+  :focus-visible{outline:2px solid var(--accent);outline-offset:3px;}
+  a{color:var(--accent);}
+
+  .sheet{max-width:720px;margin:0 auto;padding:0 24px 96px;}
+
+  /* ---------- masthead ---------- */
+  .masthead{padding:64px 0 40px;border-bottom:1px solid var(--rule);}
+  .eyebrow{
+    font-family:var(--mono);font-size:12px;letter-spacing:.12em;text-transform:uppercase;
+    color:var(--accent);font-weight:600;
+  }
+  .masthead h1{
+    font-family:var(--serif);font-weight:400;font-size:clamp(2.4rem,3vw + 1.6rem,3.6rem);
+    margin:14px 0 6px;text-wrap:balance;letter-spacing:-.01em;
+  }
+  .masthead .sub{
+    font-size:17px;color:var(--ink-dim);max-width:52ch;text-wrap:balance;
+  }
+  .masthead-cta{display:flex;flex-wrap:wrap;align-items:center;gap:16px;margin-top:28px;}
+  .btn{
+    display:inline-flex;align-items:center;gap:8px;font-size:14.5px;font-weight:600;
+    padding:12px 20px;border-radius:3px;text-decoration:none;border:1px solid transparent;
+    font-family:var(--sans);
+  }
+  .btn-solid{background:var(--accent);color:var(--accent-ink);}
+  .btn-solid:hover{opacity:.9;}
+  .cta-note{font-size:13px;color:var(--ink-faint);}
+
+  /* ---------- статьи ---------- */
+  .article{padding:52px 0;border-bottom:1px solid var(--rule);position:relative;}
+  .article:last-of-type{border-bottom:none;}
+  .article-num{
+    font-family:var(--mono);font-size:13px;color:var(--accent);font-weight:600;
+    letter-spacing:.04em;margin-bottom:10px;
+  }
+  .article h2{
+    font-family:var(--serif);font-weight:400;font-size:clamp(1.5rem,1vw + 1.3rem,1.9rem);
+    margin:0 0 18px;text-wrap:balance;
+  }
+  .article p{margin:0 0 16px;max-width:64ch;color:var(--ink);}
+  .article p.lede{font-size:16.5px;color:var(--ink-dim);}
+  .article p:last-child{margin-bottom:0;}
+
+  /* ---------- stat pair (статья 1) ---------- */
+  .stat-pair{display:flex;flex-wrap:wrap;gap:28px;margin:28px 0 8px;align-items:flex-end;}
+  .stat{flex:1;min-width:190px;}
+  .stat .k{font-family:var(--mono);font-size:11.5px;letter-spacing:.06em;text-transform:uppercase;color:var(--ink-faint);}
+  .stat .v{font-family:var(--serif);font-size:clamp(2.1rem,2vw + 1.4rem,2.8rem);line-height:1;margin-top:6px;font-variant-numeric:tabular-nums;}
+  .stat.was .v{color:var(--ink-faint);text-decoration:line-through;text-decoration-color:var(--ink-faint);text-decoration-thickness:2px;}
+  .stat.now .v{color:var(--accent);}
+  .stat-arrow{font-family:var(--serif);font-size:1.8rem;color:var(--ink-faint);padding-bottom:8px;}
+
+  /* ---------- steps (статья 2) ---------- */
+  .steps{display:flex;flex-direction:column;gap:0;margin-top:24px;border:1px solid var(--surface-line);border-radius:4px;overflow:hidden;background:var(--surface);}
+  .step{display:flex;gap:18px;padding:20px 22px;border-bottom:1px solid var(--surface-line);}
+  .step:last-child{border-bottom:none;}
+  .step-num{
+    font-family:var(--serif);font-size:1.5rem;color:var(--accent);flex:none;width:34px;
+    line-height:1.3;
+  }
+  .step-body h3{margin:0 0 4px;font-size:15.5px;font-weight:700;}
+  .step-body p{margin:0;font-size:14.5px;color:var(--ink-dim);max-width:52ch;}
+
+  /* ---------- deliverable list (статья 3) ---------- */
+  .deliverables{list-style:none;margin:22px 0 0;padding:0;display:grid;gap:12px;}
+  .deliverables li{
+    display:flex;gap:12px;padding:14px 16px;background:var(--surface);
+    border:1px solid var(--surface-line);border-radius:4px;font-size:14.5px;
+  }
+  .deliverables li .mark{color:var(--accent);flex:none;font-family:var(--serif);}
+  .deliverables li b{display:block;font-size:14.5px;}
+  .deliverables li span.d{color:var(--ink-dim);font-size:13.5px;}
+
+  .flag-box{
+    margin-top:18px;padding:16px 18px;border-radius:4px;
+    background:var(--accent-tint);border:1px solid var(--accent-tint-strong);
+    font-size:14px;line-height:1.6;
+  }
+  .flag-box b{color:var(--accent);}
+
+  /* ---------- example (статья 4) ---------- */
+  .example{
+    margin-top:22px;padding:20px 22px;border-radius:4px;
+    background:var(--surface);border:1px solid var(--surface-line);border-left:3px solid var(--accent);
+  }
+  .example .who{font-family:var(--mono);font-size:11.5px;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-faint);margin-bottom:8px;}
+  .example p{font-size:14.5px;color:var(--ink-dim);margin:0 0 10px;}
+  .example .verdict{font-size:14.5px;color:var(--ink);}
+  .example .verdict b{color:var(--good);}
+
+  .domain-row{display:flex;flex-wrap:wrap;gap:8px;margin-top:20px;}
+  .domain-chip{
+    font-family:var(--mono);font-size:12px;padding:6px 12px;border-radius:999px;
+    border:1px solid var(--surface-line);color:var(--ink-dim);
+  }
+
+  /* ---------- privacy note (статья 5) ---------- */
+  .note-row{display:flex;gap:12px;margin-top:16px;padding-top:16px;border-top:1px dashed var(--rule);}
+  .note-row .icon{flex:none;font-family:var(--serif);color:var(--accent);font-size:1.1rem;}
+  .note-row p{margin:0;font-size:13.5px;color:var(--ink-dim);}
+
+  /* ---------- terms (статья 6) ---------- */
+  .terms{display:flex;flex-wrap:wrap;gap:16px;margin-top:24px;}
+  .term-card{
+    flex:1;min-width:220px;padding:22px;border-radius:4px;
+    background:var(--surface);border:1px solid var(--surface-line);
+  }
+  .term-card .amount{font-family:var(--serif);font-size:1.9rem;color:var(--accent);font-variant-numeric:tabular-nums;}
+  .term-card .label{font-size:13px;color:var(--ink-dim);margin-top:4px;}
+
+  /* ---------- signature / footer ---------- */
+  .signature{padding:56px 0 0;text-align:center;}
+  .signature .seal{
+    display:inline-flex;align-items:center;justify-content:center;
+    width:64px;height:64px;border-radius:50%;border:1.5px solid var(--accent);
+    font-family:var(--serif);font-size:1.6rem;color:var(--accent);margin-bottom:18px;
+  }
+  .signature h2{font-family:var(--serif);font-weight:400;font-size:1.6rem;margin:0 0 10px;}
+  .signature p{color:var(--ink-dim);font-size:14.5px;max-width:48ch;margin:0 auto 24px;}
+  .footer-note{font-size:12px;color:var(--ink-faint);margin-top:40px;}
+
+  @media (max-width:600px){
+    .masthead{padding:44px 0 32px;}
+    .article{padding:40px 0;}
+    .stat-pair{gap:18px;}
+  }
+</style>
+</head>
+<body>
+
+<div class="sheet">
+
+  <header class="masthead">
+    <div class="eyebrow">Для адвокатов Республики Казахстан</div>
+    <h1>Адвокат-мастер</h1>
+    <p class="sub">Цифровой параюрист, который проводит первичный приём клиента вместо вас — и оставляет на вашем столе готовое дело, а не сырую переписку в WhatsApp.</p>
+    <div class="masthead-cta">
+      <a class="btn btn-solid" href="https://advokat-master.vercel.app/?l=demo" target="_blank" rel="noopener">Открыть живое демо →</a>
+      <span class="cta-note">Работает в браузере, установка не нужна</span>
+    </div>
+  </header>
+
+  <section class="article">
+    <div class="article-num">Статья 1</div>
+    <h2>Зачем это адвокату</h2>
+    <p class="lede">Первичный приём одного клиента — это обычно 3–5 часов вашего времени: выяснить обстоятельства, запросить документы, проверить подсудность и сроки давности, прикинуть перспективы. При ставке 15 000–30 000 ₸/час это 45 000–150 000 ₸ себестоимости ещё до того, как вы взяли дело в работу.</p>
+    <div class="stat-pair">
+      <div class="stat was"><div class="k">Сейчас, вручную</div><div class="v">3–5 час</div></div>
+      <div class="stat-arrow">→</div>
+      <div class="stat now"><div class="k">С Адвокат-мастером</div><div class="v">~20 мин</div></div>
+    </div>
+    <p>Оставшееся время — уже не сбор фактов, а проверка готового анализа и подписание документов.</p>
+  </section>
+
+  <section class="article">
+    <div class="article-num">Статья 2</div>
+    <h2>Как это устроено</h2>
+    <p class="lede">Три шага, из которых ваш — только первый и последний.</p>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">1</div>
+        <div class="step-body">
+          <h3>Отправляете личную ссылку</h3>
+          <p>В WhatsApp, Telegram или любым другим способом — ссылка привязана лично к вам, дела попадают только в ваш кабинет.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">2</div>
+        <div class="step-body">
+          <h3>Клиент заполняет и общается с ИИ</h3>
+          <p>Контакты, ИИН, семейное положение — обычной формой. Саму ситуацию клиент описывает своими словами, голосом или текстом, прикладывает фото документов — а дальше ИИ задаёт до пяти уточняющих вопросов по существу дела.</p>
+        </div>
+      </div>
+      <div class="step">
+        <div class="step-num">3</div>
+        <div class="step-body">
+          <h3>Готовое дело — в вашем кабинете</h3>
+          <p>Карточка клиента, юридический анализ, пакет документов и список недостающих доказательств — остаётся проверить и подписать.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="article">
+    <div class="article-num">Статья 3</div>
+    <h2>Что оказывается на вашем столе</h2>
+    <ul class="deliverables">
+      <li><span class="mark">§</span><div><b>Анализ ситуации</b><span class="d"> — категория дела, применимые нормы, стороны, оценка перспектив, сроки, подсудность.</span></div></li>
+      <li><span class="mark">§</span><div><b>Пакет документов</b><span class="d"> — из претензии, искового заявления, адвокатского запроса, ходатайства, договора об оказании юрпомощи собирается только то, что нужно для конкретного дела.</span></div></li>
+      <li><span class="mark">§</span><div><b>Госпошлина — счётом, не догадкой</b><span class="d"> — сумма считается кодом от текущего МРП и суммы иска, а не «прикидывается» моделью.</span></div></li>
+      <li><span class="mark">§</span><div><b>Список недостающих доказательств</b><span class="d"> — что ещё нужно донести клиенту, прежде чем подавать.</span></div></li>
+    </ul>
+    <div class="flag-box">
+      <b>Для уголовных дел</b> — отдельно: процессуальный статус клиента, стадия процесса, категория тяжести (ст.11 УК РК), и черновой список возможных смягчающих/отягчающих обстоятельств — чтобы сразу видеть, с чем работать.
+    </div>
+  </section>
+
+  <section class="article">
+    <div class="article-num">Статья 4</div>
+    <h2>Правовая база и дисциплина</h2>
+    <p class="lede">Ключевое правило системы: если модель не уверена в номере статьи, сумме или сроке — она честно говорит «нужно уточнить», а не называет что-то на память. Каждая цифра в промпте сверена по действующему тексту закона, а не взята из общих знаний ИИ.</p>
+    <div class="domain-row">
+      <span class="domain-chip">Гражданские дела · ГК/ГПК РК</span>
+      <span class="domain-chip">Уголовные дела · УК/УПК РК</span>
+      <span class="domain-chip">Административные жалобы · АППК</span>
+      <span class="domain-chip">Банкротство физлиц</span>
+      <span class="domain-chip">Семейные споры</span>
+    </div>
+    <div class="example">
+      <div class="who">Пример из реального теста системы</div>
+      <p>«Меня окликнул незнакомый парень... ударил ногой в бедро, я ответил, завязалась драка... сейчас я подозреваемый».</p>
+      <div class="verdict">Система уточнила статус, стадию, наличие протокола и мед. освидетельствования — и определила: <b>возможная необходимая оборона (ст. 32 УК РК)</b>, честно отметив, что точная статья ещё не предъявлена следствием.</div>
+    </div>
+  </section>
+
+  <section class="article">
+    <div class="article-num">Статья 5</div>
+    <h2>Конфиденциальность</h2>
+    <p class="lede">Данные клиента видите только вы. Клиент не получает черновик документов — только подтверждение, что вы с ним свяжетесь.</p>
+    <div class="note-row">
+      <div class="icon">✓</div>
+      <p>Если клиент отказался от услуг — дело удаляется из системы полностью, без возможности восстановить, отдельной кнопкой в вашем кабинете.</p>
+    </div>
+    <div class="note-row">
+      <div class="icon">i</div>
+      <p>Пилотная версия размещена на инфраструктуре Vercel (не на серверах в РК) — перед выходом на широкий круг клиентов с реальными персональными данными в дорожной карте стоит перенос хранения на казахстанский хостинг, как того требует закон «О персональных данных».</p>
+    </div>
+  </section>
+
+  <section class="article">
+    <div class="article-num">Статья 6</div>
+    <h2>Условия подключения</h2>
+    <p class="lede">Без биллинга внутри сервиса — по договору, напрямую.</p>
+    <div class="terms">
+      <div class="term-card">
+        <div class="amount">40 000–50 000 ₸</div>
+        <div class="label">разовая настройка: персональная ссылка, кабинет, онбординг</div>
+      </div>
+      <div class="term-card">
+        <div class="amount">10 000 ₸ / мес</div>
+        <div class="label">сопровождение и доступ к кабинету</div>
+      </div>
+    </div>
+  </section>
+
+  <div class="signature">
+    <div class="seal">§</div>
+    <h2>Готовы попробовать на своих делах</h2>
+    <p>Демо-доступ открыт — можно пройти путь клиента и посмотреть, что попадает в кабинет, до любых договорённостей.</p>
+    <a class="btn btn-solid" href="https://advokat-master.vercel.app/?l=demo" target="_blank" rel="noopener">advokat-master.vercel.app →</a>
+    <div class="footer-note">Адвокат-мастер · Phase 1 · находится в активной разработке — как и жалоба-мастер, база растёт с каждым реальным делом</div>
+  </div>
+
+</div>
+</body>
+</html>
