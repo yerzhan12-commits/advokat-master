@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Адвокат-мастер — презентация для адвокатов</title>
+<title>Адвокат-мастер — ИИ-помощник для первичного приёма клиента</title>
 <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>⚖️</text></svg>">
 <style>
   :root{
@@ -80,6 +80,10 @@
   .masthead h1{
     font-family:var(--serif);font-weight:400;font-size:clamp(2.4rem,3vw + 1.6rem,3.6rem);
     margin:14px 0 6px;text-wrap:balance;letter-spacing:-.01em;
+  }
+  .masthead .tagline{
+    font-family:var(--mono);font-size:13.5px;color:var(--accent);letter-spacing:.02em;
+    margin-bottom:10px;
   }
   .masthead .sub{
     font-size:17px;color:var(--ink-dim);max-width:52ch;text-wrap:balance;
@@ -220,6 +224,7 @@
   <header class="masthead">
     <div class="eyebrow">Для адвокатов Республики Казахстан</div>
     <h1>Адвокат-мастер</h1>
+    <div class="tagline">ИИ-помощник для первичного приёма клиента</div>
     <p class="sub">Цифровой параюрист, который проводит первичный приём клиента вместо вас — и оставляет на вашем столе готовое дело, а не сырую переписку в WhatsApp.</p>
     <div class="masthead-cta">
       <a class="btn btn-solid" href="https://advokat-master.vercel.app/?l=demo" target="_blank" rel="noopener">Открыть живое демо →</a>
