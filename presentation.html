@@ -118,6 +118,25 @@
   .stat.now .v{color:var(--accent);}
   .stat-arrow{font-family:var(--serif);font-size:1.8rem;color:var(--ink-faint);padding-bottom:8px;}
 
+  /* ---------- economics table (статья 1) ---------- */
+  .econ-wrap{margin-top:28px;border:1px solid var(--surface-line);border-radius:4px;overflow-x:auto;background:var(--surface);}
+  table.econ{border-collapse:collapse;width:100%;min-width:480px;font-size:14px;}
+  table.econ th, table.econ td{text-align:left;padding:12px 16px;border-bottom:1px solid var(--surface-line);font-variant-numeric:tabular-nums;}
+  table.econ thead th{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);font-weight:600;}
+  table.econ tbody tr:last-child td{border-bottom:none;}
+  table.econ tbody tr.mid{background:var(--accent-tint);}
+  table.econ td.num{color:var(--accent);font-weight:600;}
+  .econ-compare{display:flex;flex-wrap:wrap;gap:16px;margin-top:16px;}
+  .econ-card{flex:1;min-width:220px;padding:18px 20px;border-radius:4px;border:1px solid var(--surface-line);background:var(--surface);}
+  .econ-card .cap{font-family:var(--mono);font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--ink-faint);}
+  .econ-card .num{font-family:var(--serif);font-size:1.7rem;margin-top:6px;font-variant-numeric:tabular-nums;}
+  .econ-card.spend .num{color:var(--ink-faint);}
+  .econ-card.save .num{color:var(--accent);}
+  .econ-card .bar{height:6px;border-radius:3px;margin-top:10px;background:var(--rule);overflow:hidden;}
+  .econ-card .bar i{display:block;height:100%;background:var(--ink-faint);}
+  .econ-card.save .bar i{background:var(--accent);}
+  .econ-note{font-size:12.5px;color:var(--ink-faint);margin-top:12px;}
+
   /* ---------- steps (статья 2) ---------- */
   .steps{display:flex;flex-direction:column;gap:0;margin-top:24px;border:1px solid var(--surface-line);border-radius:4px;overflow:hidden;background:var(--surface);}
   .step{display:flex;gap:18px;padding:20px 22px;border-bottom:1px solid var(--surface-line);}
@@ -218,6 +237,33 @@
       <div class="stat now"><div class="k">С Адвокат-мастером</div><div class="v">~20 мин</div></div>
     </div>
     <p>Оставшееся время — уже не сбор фактов, а проверка готового анализа и подписание документов.</p>
+
+    <p class="lede" style="margin-top:32px;">Расчёт носит иллюстративный характер. Допущение: приём одного клиента вручную занимает ~4 часа (середина диапазона 3–5), три новых клиента в месяц — консервативная нагрузка для практикующего адвоката.</p>
+    <div class="econ-wrap">
+      <table class="econ">
+        <thead>
+          <tr><th>Ставка адвоката</th><th>Стоимость приёма 1 клиента (~4 ч)</th><th>При 3 клиентах/мес — за год</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>15 000 ₸/час</td><td class="num">60 000 ₸</td><td class="num">2 160 000 ₸</td></tr>
+          <tr class="mid"><td>20 000 ₸/час</td><td class="num">80 000 ₸</td><td class="num">2 880 000 ₸</td></tr>
+          <tr><td>30 000 ₸/час</td><td class="num">120 000 ₸</td><td class="num">4 320 000 ₸</td></tr>
+        </tbody>
+      </table>
+    </div>
+    <div class="econ-compare">
+      <div class="econ-card spend">
+        <div class="cap">За год, при ставке 20 000 ₸/час</div>
+        <div class="num">2 880 000 ₸</div>
+        <div class="bar"><i style="width:100%"></i></div>
+      </div>
+      <div class="econ-card save">
+        <div class="cap">Адвокат-мастер (настройка + год подписки)</div>
+        <div class="num">~160 000 ₸</div>
+        <div class="bar"><i style="width:6%"></i></div>
+      </div>
+    </div>
+    <p class="econ-note">≈ в 18 раз меньше, чем себестоимость ручного приёма тех же клиентов вашим собственным временем.</p>
   </section>
 
   <section class="article">
