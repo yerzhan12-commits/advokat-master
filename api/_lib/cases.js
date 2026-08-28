@@ -20,6 +20,10 @@ function caseKey(caseId) {
 function sessionKey(token) {
   return `session:${token}`;
 }
+// Единственное место, откуда можно перечислить всех адвокатов — без него
+// нет способа построить сводку "кто чем пользуется" без хранения паролей
+// каждого адвоката в другом месте (например, в конфиге фонового агента).
+const ALL_LAWYERS_KEY = 'all_lawyer_ids';
 
 // node-redis всегда возвращает сырую строку (мы сами делаем JSON.stringify
 // перед записью) — этот разбор на всякий случай терпим и к сырому объекту,
@@ -65,7 +69,19 @@ async function createLawyer({ lawyerId, name, password }) {
   };
   const client = await getClient();
   await client.set(lawyerKey(lawyerId), JSON.stringify(record));
+  await client.sAdd(ALL_LAWYERS_KEY, lawyerId);
   return record;
+}
+
+// Разовая ручная регистрация в индексе для адвокатов, созданных ДО того, как
+// появился ALL_LAWYERS_KEY (test/demo/aitubaev/chinyaeva/shalbayev/torekhanov)
+// — createLawyer их туда не добавлял, потому что индекса ещё не было.
+async function backfillLawyerIndex(lawyerIds) {
+  const client = await getClient();
+  const existing = await Promise.all(lawyerIds.map((id) => client.exists(lawyerKey(id))));
+  const known = lawyerIds.filter((id, i) => existing[i]);
+  if (known.length) await client.sAdd(ALL_LAWYERS_KEY, known);
+  return known;
 }
 
 async function getLawyer(lawyerId) {
@@ -176,6 +192,29 @@ async function getLawyerCases(lawyerId) {
   return items.filter(Boolean);
 }
 
+// Сводка по всем адвокатам сразу — для еженедельного авто-отчёта, чтобы не
+// хранить пароль каждого адвоката отдельно, а гейтить одним ADMIN_PASSWORD.
+async function getAllLawyersOverview() {
+  const client = await getClient();
+  const lawyerIds = await client.sMembers(ALL_LAWYERS_KEY);
+  const overview = await Promise.all(lawyerIds.map(async (lawyerId) => {
+    const lawyer = await getLawyer(lawyerId);
+    const cases = await getLawyerCases(lawyerId);
+    const byStatus = {};
+    for (const s of CASE_STATUSES) byStatus[s] = 0;
+    for (const c of cases) byStatus[c.status] = (byStatus[c.status] || 0) + 1;
+    return {
+      lawyerId,
+      name: lawyer && lawyer.name,
+      active: lawyer && lawyer.active,
+      totalCases: cases.length,
+      byStatus,
+      lastCaseUpdatedAt: cases.reduce((max, c) => (c.updatedAt > max ? c.updatedAt : max), ''),
+    };
+  }));
+  return overview.sort((a, b) => a.lawyerId.localeCompare(b.lawyerId));
+}
+
 module.exports = {
   CASE_STATUSES,
   createLawyer,
@@ -189,4 +228,6 @@ module.exports = {
   saveCase,
   deleteCase,
   getLawyerCases,
+  getAllLawyersOverview,
+  backfillLawyerIndex,
 };
