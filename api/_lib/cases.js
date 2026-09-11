@@ -20,6 +20,12 @@ function caseKey(caseId) {
 function sessionKey(token) {
   return `session:${token}`;
 }
+// Личный чат адвоката с ассистентом — отдельно от messages внутри дела
+// (это разговор ПРО дело клиента с ИИ, который сам клиент не видит).
+function assistantChatKey(lawyerId) {
+  return `lawyer:${lawyerId}:assistant`;
+}
+const ASSISTANT_CHAT_MAX_MESSAGES = 60; // держим историю разумного размера, чтобы не раздувать промпт бесконечно
 // Единственное место, откуда можно перечислить всех адвокатов — без него
 // нет способа построить сводку "кто чем пользуется" без хранения паролей
 // каждого адвоката в другом месте (например, в конфиге фонового агента).
@@ -192,6 +198,20 @@ async function getLawyerCases(lawyerId) {
   return items.filter(Boolean);
 }
 
+async function getAssistantChat(lawyerId) {
+  const client = await getClient();
+  const raw = await client.get(assistantChatKey(lawyerId));
+  const parsed = parseMaybeJson(raw);
+  return (parsed && Array.isArray(parsed.messages)) ? parsed.messages : [];
+}
+
+async function saveAssistantChat(lawyerId, messages) {
+  const trimmed = messages.slice(-ASSISTANT_CHAT_MAX_MESSAGES);
+  const client = await getClient();
+  await client.set(assistantChatKey(lawyerId), JSON.stringify({ messages: trimmed, updatedAt: new Date().toISOString() }));
+  return trimmed;
+}
+
 // Сводка по всем адвокатам сразу — для еженедельного авто-отчёта, чтобы не
 // хранить пароль каждого адвоката отдельно, а гейтить одним ADMIN_PASSWORD.
 async function getAllLawyersOverview() {
@@ -230,4 +250,6 @@ module.exports = {
   getLawyerCases,
   getAllLawyersOverview,
   backfillLawyerIndex,
+  getAssistantChat,
+  saveAssistantChat,
 };
