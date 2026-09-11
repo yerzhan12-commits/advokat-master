@@ -474,7 +474,26 @@ document.getElementById('chat-input').addEventListener('keydown', (e) => {
 });
 
 // --- старт ---
-if (restoreSession()) {
+async function autoDemoLogin(){
+  try {
+    const res = await fetch('/api/lawyer/demo-login');
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Демо недоступно');
+    state.token = data.token; state.name = data.name;
+    saveSession();
+    enterDashboard();
+  } catch (err) {
+    showScreen('login');
+    const errorEl = document.getElementById('login-error');
+    errorEl.textContent = 'Не удалось открыть демо: ' + err.message;
+    errorEl.style.display = 'block';
+  }
+}
+
+const urlParams = new URLSearchParams(location.search);
+if (urlParams.get('demo') === '1') {
+  autoDemoLogin();
+} else if (restoreSession()) {
   enterDashboard();
 } else {
   showScreen('login');
