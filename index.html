@@ -86,6 +86,13 @@
 
   .done-icon{font-size:38px;margin-bottom:10px;}
   .lawyer-note{color:var(--muted);font-size:13px;margin-top:16px;line-height:1.5;}
+
+  .who-toggle{display:flex;gap:8px;margin-bottom:14px;}
+  .who-btn{
+    flex:1;background:var(--surface);border:1px solid var(--grid);border-radius:10px;
+    color:var(--ink2);font-size:13.5px;font-family:inherit;padding:11px 10px;cursor:pointer;
+  }
+  .who-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
 </style>
 </head>
 <body>
@@ -100,11 +107,16 @@
     <h1>Приём клиента</h1>
     <p class="sub">Заполните форму — адвокат получит структурированную карточку дела и черновики документов. Ваши данные видит только адвокат.</p>
 
+    <div class="who-toggle">
+      <button type="button" class="who-btn active" id="who-self">Заполняю за себя</button>
+      <button type="button" class="who-btn" id="who-relative">Заполняю за близкого человека</button>
+    </div>
+
     <div class="card">
-      <label>ФИО</label>
+      <label id="l-name">ФИО</label>
       <input type="text" id="f-name" autocomplete="name">
 
-      <label>Телефон</label>
+      <label id="l-phone">Телефон</label>
       <input type="tel" id="f-phone" placeholder="+7 7__ ___ __ __" autocomplete="tel">
 
       <label>ИИН/БИН (12 цифр)</label>
@@ -119,7 +131,7 @@
         <option value="вдовец/вдова">Вдовец/вдова</option>
       </select>
 
-      <label>Опишите ситуацию своими словами</label>
+      <label id="l-situation">Опишите ситуацию своими словами</label>
       <div class="row-inline">
         <textarea id="f-situation" placeholder="Что произошло, с кем спор, какие суммы/сроки известны..."></textarea>
         <button type="button" class="mic-btn" id="intake-mic" title="Голосовой ввод">🎙</button>
@@ -166,7 +178,27 @@ const MAX_FILES = 5;
 const MAX_TOTAL_BASE64_CHARS = 4 * 1024 * 1024;
 const MAX_IMAGE_DIMENSION = 1600;
 
-const state = { lawyerId: null, caseId: null, messages: [], attachedFiles: [], questionCount: 0 };
+const state = { lawyerId: null, caseId: null, messages: [], attachedFiles: [], questionCount: 0, filledBy: 'self' };
+
+// --- переключатель "за себя / за близкого" — актуально, когда сам клиент
+// (например, в СИЗО) не может сам зайти и заполнить форму, а это делает
+// родственник, который первым обращается к адвокату ---
+function setFilledBy(who){
+  state.filledBy = who;
+  document.getElementById('who-self').classList.toggle('active', who === 'self');
+  document.getElementById('who-relative').classList.toggle('active', who === 'relative');
+  if (who === 'relative') {
+    document.getElementById('l-name').textContent = 'ФИО того, кому нужна помощь';
+    document.getElementById('l-phone').textContent = 'Ваш телефон (для связи с вами)';
+    document.getElementById('l-situation').textContent = 'Опишите ситуацию словами родственника';
+  } else {
+    document.getElementById('l-name').textContent = 'ФИО';
+    document.getElementById('l-phone').textContent = 'Телефон';
+    document.getElementById('l-situation').textContent = 'Опишите ситуацию своими словами';
+  }
+}
+document.getElementById('who-self').addEventListener('click', () => setFilledBy('self'));
+document.getElementById('who-relative').addEventListener('click', () => setFilledBy('relative'));
 
 function getLawyerIdFromUrl(){
   const params = new URLSearchParams(window.location.search);
@@ -323,7 +355,7 @@ document.getElementById('intro-submit').addEventListener('click', async () => {
     const res = await fetch('/api/case-create', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ lawyerId: state.lawyerId, clientName, clientPhone, iinBin, familyStatus, situationText, attachedFiles: state.attachedFiles }),
+      body: JSON.stringify({ lawyerId: state.lawyerId, clientName, clientPhone, iinBin, familyStatus, situationText, attachedFiles: state.attachedFiles, filledBy: state.filledBy }),
     });
     const data = await res.json();
     if (!res.ok) throw new Error(data.error || 'Не удалось отправить форму');

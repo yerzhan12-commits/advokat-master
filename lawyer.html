@@ -110,7 +110,7 @@
         <h1 id="d-client-name"></h1>
         <select id="d-status"></select>
       </div>
-      <div class="detail-field"><div class="k">Телефон</div><div class="v" id="d-phone"></div></div>
+      <div class="detail-field"><div class="k">Телефон</div><div class="v" id="d-phone"></div><div class="v" id="d-relative-note" style="display:none;color:#ffd166;font-size:13px;margin-top:4px;">⚠ Форму заполнил родственник — клиент, вероятно, недоступен напрямую (например, в СИЗО). Звонить на этот номер.</div></div>
       <div class="detail-field"><div class="k">ИИН/БИН</div><div class="v" id="d-iin"></div></div>
       <div class="detail-field"><div class="k">Семейное положение</div><div class="v" id="d-family"></div></div>
     </div>
@@ -343,6 +343,7 @@ async function openCase(caseId){
     const c = data.case;
     document.getElementById('d-client-name').textContent = c.clientName || 'Без имени';
     document.getElementById('d-phone').textContent = c.clientPhone || '—';
+    document.getElementById('d-relative-note').style.display = (c.intake && c.intake.filledBy === 'relative') ? 'block' : 'none';
     document.getElementById('d-iin').textContent = (c.intake && c.intake.iinBin) || '—';
     document.getElementById('d-family').textContent = (c.intake && c.intake.familyStatus) || '—';
 

@@ -10,7 +10,8 @@ module.exports = async (req, res) => {
     return;
   }
 
-  const { lawyerId, clientName, clientPhone, iinBin, familyStatus, situationText, attachedFiles } = req.body || {};
+  const { lawyerId, clientName, clientPhone, iinBin, familyStatus, situationText, attachedFiles, filledBy } = req.body || {};
+  const isRelative = filledBy === 'relative';
 
   if (typeof lawyerId !== 'string' || !lawyerId.trim()) {
     res.status(400).json({ error: 'lawyerId is required' });
@@ -45,7 +46,15 @@ module.exports = async (req, res) => {
     // упрощение Phase 1: закрывает основной сценарий (приложить расписку/
     // договор при описании ситуации), но не полный zhaloba-master паттерн
     // прикрепления файлов на каждом шаге переписки.
-    const contentBlocks = [{ type: 'text', text: situationText.trim() }];
+    // Клиент (особенно по уголовным делам) часто уже в СИЗО и не может сам
+    // зайти по ссылке — тогда форму за него заполняет родственник. Явно
+    // говорим об этом модели в самом первом сообщении, чтобы уточняющие
+    // вопросы формулировались корректно ("узнайте у него", а не "у вас") —
+    // дешевле и надёжнее, чем менять сам SYSTEM_PROMPT под оба случая.
+    const situationPrefix = isRelative
+      ? `[Форму заполняет родственник/близкий человек клиента, а не сам клиент — вероятно, клиент недоступен напрямую (например, находится в СИЗО). Формулируй уточняющие вопросы соответственно: "уточните у него/неё", а не "у вас".]\n\n`
+      : '';
+    const contentBlocks = [{ type: 'text', text: situationPrefix + situationText.trim() }];
     if (Array.isArray(attachedFiles)) {
       for (const f of attachedFiles) {
         if (!f || typeof f.base64 !== 'string' || !f.base64) continue;
@@ -64,6 +73,7 @@ module.exports = async (req, res) => {
       intake: {
         iinBin: iinBin.replace(/\s+/g, ''),
         familyStatus: typeof familyStatus === 'string' ? familyStatus.trim() : '',
+        filledBy: isRelative ? 'relative' : 'self',
       },
       messages: [{ role: 'user', content: contentBlocks }],
     });
